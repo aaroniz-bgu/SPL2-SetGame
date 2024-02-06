@@ -8,4 +8,6 @@ src/main/resources/cards/*.png
 .DS_Store
 .DS_Store/
 .DS_Store/*
+target/
+target/*
 #
