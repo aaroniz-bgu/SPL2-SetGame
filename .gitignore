@@ -1,0 +1,9 @@
+.idea/
+.idea/*
+.vscode/
+.vscode/*
+bonuses.txt
+# To run the game you'll need to exec the script found in the resources/cards
+src/main/resources/cards/*.png
+.DS_Store/
+.DS_Store/*
