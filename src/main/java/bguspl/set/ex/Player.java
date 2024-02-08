@@ -170,7 +170,7 @@ public class Player implements Runnable {
      */
     public void point() {
         // TODO implement
-        // notify since we're waiting to know if we we're granted points
+        notifyAll();
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
     }
@@ -180,7 +180,8 @@ public class Player implements Runnable {
      */
     public void penalty() {
         // TODO implement
-        // notify since we're waiting to know if we we're penalized
+
+        notifyAll();
     }
 
     public int score() {
