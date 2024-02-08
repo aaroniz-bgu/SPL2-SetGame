@@ -58,6 +58,8 @@ public class Player implements Runnable {
      * The queue of key presses (used by the AI player).
      */
     private final BlockingQueue<Integer> keyPresses;
+    // TODO have some messaging to the player if it's tokes we're removed by the dealer.
+    // FIXME - important
 
     /**
      * The maximum number of key presses that can be processed at the time in the queue.
@@ -150,16 +152,19 @@ public class Player implements Runnable {
      */
     public void keyPressed(int slot) {
         // TODO implement
+        // FIXME - this needs to be changed so the operation in the table happens post freeze delay
         if(!table.removeToken(id, slot)) {
             try {
                 table.placeToken(id, slot);
+                keyPresses.put(slot);
             } catch (IllegalStateException e) {
                 env.logger.warning(
                         "Player " + id + " tried to place token on empty slot, most likely card was removed");
+            } catch (InterruptedException  e) {
+                env.logger.warning(
+                        "Player " + id + " was interrupted while trying to place token");
             }
         }
-        // Consider adding a counter of how many keys are pressed atm, this counter will be updated when
-        // point are called.
     }
 
     /**
