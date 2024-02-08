@@ -124,9 +124,9 @@ public class Table {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {}
 
-        slotsToPlayer.get(slot).clear(); // This is ok since we're using read-only map with vectors.
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
+        slotsToPlayer.get(slot).clear(); // This is ok since we're using read-only map with vectors.
     }
 
     /**
