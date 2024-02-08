@@ -2,6 +2,9 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
 /**
  * This class manages the players' threads and data
  *
@@ -140,7 +143,14 @@ public class Player implements Runnable {
      */
     public void keyPressed(int slot) {
         // TODO implement
-        // Change the state of the slot the player chose in the table.
+        if(!table.removeToken(id, slot)) {
+            try {
+                table.placeToken(id, slot);
+            } catch (IllegalStateException e) {
+                env.logger.warning(
+                        "Player " + id + " tried to place token on empty slot, most likely card was removed");
+            }
+        }
         // Consider adding a counter of how many keys are pressed atm, this counter will be updated when
         // point are called.
     }
