@@ -51,6 +51,17 @@ public class Player implements Runnable {
     private int score;
 
     /**
+     * The queue of key presses (used by the AI player).
+     */
+    private final BlockingQueue<Integer> keyPresses;
+
+    /**
+     * The maximum number of key presses that can be processed at the time in the queue.
+     * This was not mentioned as part of the configuration field that we need to support for the bonus.
+     */
+    private static final int MAX_KEY_PRESSES = 3;
+
+    /**
      * The class constructor.
      *
      * @param env    - the environment object.
