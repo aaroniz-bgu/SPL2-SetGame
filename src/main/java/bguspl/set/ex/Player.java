@@ -75,6 +75,12 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
+
+        if(!human) {
+            keyPresses = new ArrayBlockingQueue<>(MAX_KEY_PRESSES);
+        } else {
+            keyPresses = null;
+        }
     }
 
     /**
