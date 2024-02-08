@@ -50,10 +50,11 @@ public class Dealer implements Runnable {
     @Override
     public void run() {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+        // TODO Start player threads
         while (!shouldFinish()) {
             placeCardsOnTable();
-            timerLoop();
-            updateTimerDisplay(false);
+            timerLoop(); // Either here or in the timerLoop you should check for the
+            updateTimerDisplay(false); // FIXME - shouldn't this be true?
             removeAllCardsFromTable();
         }
         announceWinners();
@@ -67,8 +68,8 @@ public class Dealer implements Runnable {
         while (!terminate && System.currentTimeMillis() < reshuffleTime) {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
-            removeCardsFromTable();
-            placeCardsOnTable();
+            removeCardsFromTable(); // TODO REMOVE THIS?
+            placeCardsOnTable(); // TODO REMOVE THIS?
         }
     }
 
@@ -77,6 +78,7 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
         // TODO implement
+        // Join with main thread
     }
 
     /**
@@ -100,6 +102,8 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         // TODO implement
+        // TODO Reshuffle the deck
+        // TODO Fill empty slots with cards from the deck
     }
 
     /**
@@ -114,6 +118,7 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         // TODO implement
+        if(reset) reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
     }
 
     /**

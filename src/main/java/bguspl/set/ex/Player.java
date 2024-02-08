@@ -77,6 +77,8 @@ public class Player implements Runnable {
 
         while (!terminate) {
             // TODO implement main player loop
+
+            // if(!human)
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -92,6 +94,10 @@ public class Player implements Runnable {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 // TODO implement player key press simulator
+                // Simulate key presses using the InputManager object.
+                // Randomly generate key presses and add them to the queue of key presses.
+                // Consider avoiding to simulate press of the same key was pressed last time.
+                // If 3, and haven't cleared them, randomly clear one token.
                 try {
                     synchronized (this) { wait(); }
                 } catch (InterruptedException ignored) {}
@@ -106,6 +112,7 @@ public class Player implements Runnable {
      */
     public void terminate() {
         // TODO implement
+        // Join with main thread
     }
 
     /**
@@ -115,6 +122,9 @@ public class Player implements Runnable {
      */
     public void keyPressed(int slot) {
         // TODO implement
+        // Change the state of the slot the player chose in the table.
+        // Consider adding a counter of how many keys are pressed atm, this counter will be updated when
+        // point are called.
     }
 
     /**
@@ -125,7 +135,7 @@ public class Player implements Runnable {
      */
     public void point() {
         // TODO implement
-
+        // notify since we're waiting to know if we we're granted points
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
     }
@@ -135,6 +145,7 @@ public class Player implements Runnable {
      */
     public void penalty() {
         // TODO implement
+        // notify since we're waiting to know if we we're penalized
     }
 
     public int score() {
