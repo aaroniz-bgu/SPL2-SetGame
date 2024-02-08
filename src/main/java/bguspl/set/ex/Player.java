@@ -2,6 +2,7 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -112,15 +113,18 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+            Random random = new Random();
+            int maxSlot = env.config.columns * env.config.rows;
+
             while (!terminate) {
-                // TODO implement player key press simulator
-                // Simulate key presses using the InputManager object.
-                // Randomly generate key presses and add them to the queue of key presses.
-                // Consider avoiding to simulate press of the same key was pressed last time.
-                // If 3, and haven't cleared them, randomly clear one token.
-                try {
-                    synchronized (this) { wait(); }
-                } catch (InterruptedException ignored) {}
+                // todo the rest
+                keyPressed(random.nextInt(maxSlot));
+
+                // WHY DID WE NEED THAT?
+//                try {
+//                    keyPressed(random.nextInt(maxSlot));
+//                    synchronized (this) { wait(); }
+//                } catch (InterruptedException ignored) { }
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
