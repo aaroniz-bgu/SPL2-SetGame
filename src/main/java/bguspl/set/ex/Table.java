@@ -101,7 +101,6 @@ public class Table {
      * @param card - the card id to place in the slot.
      * @param slot - the slot in which the card should be placed.
      *
-     * @pre  - slotsToPlayer[slot] is empty.
      * @post - the card placed is on the table, in the assigned slot.
      */
     public void placeCard(int card, int slot) {
