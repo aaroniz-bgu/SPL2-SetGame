@@ -80,11 +80,7 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
 
-        if(!human) {
-            keyPresses = new ArrayBlockingQueue<>(MAX_KEY_PRESSES);
-        } else {
-            keyPresses = null;
-        }
+        keyPresses = new ArrayBlockingQueue<>(MAX_KEY_PRESSES);
     }
 
     /**
