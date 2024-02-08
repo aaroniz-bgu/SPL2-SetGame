@@ -98,8 +98,15 @@ public class Player implements Runnable {
 
         while (!terminate) {
             // TODO implement main player loop
-
-            // if(!human)
+            if(keyPresses.size() == MAX_KEY_PRESSES) {
+                // talk with dealer - ask him if מס הכנסה should visit.
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    env.logger.warning(
+                            "Player " + id + " was interrupted while waiting for dealer");
+                }
+            }
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
