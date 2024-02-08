@@ -133,8 +133,15 @@ public class Table {
      * Places a player token on a grid slot.
      * @param player - the id of player the token belongs to.
      * @param slot   - the slot on which to place the token. 0 indexed.
+     *
+     * @pre  - slotToCard[slot] isn't null.
+     * @post - slotToPlayer[slot] contains player.
      */
-    public void placeToken(int player, int slot) {
+    public void placeToken(int player, int slot) { // consider synchronising this method
+        // this might be unnecessary, since the dealer deals the tokens, but I might be wrong:
+        if(slotToCard[slot] == null || cardToSlot[slotToCard[slot]] == null)
+            throw new IllegalStateException("Trying to place token on empty slot");
+
         slotsToPlayer.get(slot).add(player);
     }
 
