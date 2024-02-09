@@ -197,9 +197,13 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        // TODO implement
+        // Change player state to freeze, and give him a point.
+        state = PlayerState.POINT_FREEZE;
+        // Since player thread waits for decision.
         notifyAll();
-        int ignored = table.countCards(); // this part is just for demonstration in the unit tests
+        // This part is just for demonstration in the unit tests
+        int ignored = table.countCards();
+        // This is already increments the score.
         env.ui.setScore(id, ++score);
     }
 
@@ -207,8 +211,8 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        // TODO implement
-
+        // Change the player state to freeze, and wake him up since decision was accepted.
+        state = PlayerState.PENALTY_FREEZE;
         notifyAll();
     }
 
