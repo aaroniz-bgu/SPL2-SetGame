@@ -271,6 +271,15 @@ public class Player implements Runnable {
         }
     }
 
+    /**
+     * In case the tokens we're removed after requesting a set.
+     */
+    public void irrelevantSetRequest() {
+        synchronized (this) {
+            notifyAll();
+        }
+    }
+
     public int score() {
         return score;
     }
