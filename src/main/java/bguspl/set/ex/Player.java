@@ -161,15 +161,16 @@ public class Player implements Runnable {
             int maxSlot = env.config.columns * env.config.rows;
 
             while (!terminate) {
-                synchronized (queue) {
-                    if(queue.size() < MAX_KEY_PRESSES) {
-                        keyPressed(random.nextInt(maxSlot));
-                    } else {
-                        if(!queue.isEmpty()) {
-                            queue.poll();
+                if(state==PlayerState.PLAY)
+                    synchronized (queue) {
+                        if(queue.size() < MAX_KEY_PRESSES) {
+                            keyPressed(random.nextInt(maxSlot));
+                        } else {
+                            if(!queue.isEmpty()) {
+                                queue.poll();
+                            }
                         }
                     }
-                }
                 // Why was it needed?
 //                try {
 //                    synchronized (this) { wait(); }
@@ -188,8 +189,6 @@ public class Player implements Runnable {
         terminate = true;
         playerThread.interrupt();
         if(!human) aiThread.interrupt();
-        // TODO implement ? IS DONE ?
-        // Join with main thread?
     }
 
     /**
