@@ -183,19 +183,10 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
-        // FIXME - this needs to be changed so the operation in the table happens post freeze delay
-        if(!table.removeToken(id, slot)) {
-            try {
-                table.placeToken(id, slot);
-                keyPresses.put(slot);
-            } catch (IllegalStateException e) {
-                env.logger.warning(
-                        "Player " + id + " tried to place token on empty slot, most likely card was removed");
-            } catch (InterruptedException  e) {
-                env.logger.warning(
-                        "Player " + id + " was interrupted while trying to place token");
-            }
+        // Ignore presses if player is frozen.
+        if(state==PlayerState.PLAY) {
+            // TODO implement
+            // TODO ADD ACTION TO QUEUE
         }
     }
 
