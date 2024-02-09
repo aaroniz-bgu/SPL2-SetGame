@@ -136,6 +136,7 @@ public class Player implements Runnable {
                 default:
                     env.logger.warning(
                             "Player " + playerThread.getName() + "  entered illegal state");
+                    break;
             }
 
         }
