@@ -194,9 +194,34 @@ public class Player implements Runnable {
      */
     public void keyPressed(int slot) {
         // Ignore presses if player is frozen.
-        if(state==PlayerState.PLAY) {
-            // TODO implement
-            // TODO ADD ACTION TO QUEUE
+        synchronized (queue) {
+            if (state == PlayerState.PLAY) {
+                // To prevent redundant calls to the dealer.
+                boolean changed = false;
+                try {
+                    // Handles removing / placing cards, the order of the statements is important
+                    // since table.removeToken throws Exception.
+                    if (!table.removeToken(id, slot) && !queue.remove(slot) && queue.size() < MAX_KEY_PRESSES) {
+                        table.placeToken(id, slot);
+                        queue.add(slot);
+                        changed = true;
+                    }
+                } catch (IllegalStateException cardRemoved) {
+                    env.logger.warning("Player " + id + " tried to place token on empty slot");
+                }
+                // Before showcasing on GitHub return this mess to the main loop, this is here
+                // Just because of the assignment requirements.
+                if (queue.size() == MAX_KEY_PRESSES && changed) {
+                    try {
+                        // Requesting the dealer to set the player's state.
+                        dealer.requestSet(this, queue);
+                        playerThread.wait();
+                    } catch (InterruptedException e) {
+                        env.logger.warning(playerThread.getName()
+                                + " was interrupted, during waiting to the dealer.");
+                    }
+                }
+            }
         }
     }
 
