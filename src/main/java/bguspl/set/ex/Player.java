@@ -67,7 +67,7 @@ public class Player implements Runnable {
     /**
      * The queue of key presses (used by the AI player).
      */
-    private final BlockingQueue<Integer> keyPresses;
+    //private final BlockingQueue<Integer> keyPresses;
     // TODO have some messaging to the player if it's tokes we're removed by the dealer.
     // FIXME - important
 
