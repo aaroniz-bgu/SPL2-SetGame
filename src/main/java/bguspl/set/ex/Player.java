@@ -55,6 +55,16 @@ public class Player implements Runnable {
     private int score;
 
     /**
+     * The state determines what's the player's state.
+     */
+    private enum PlayerState {
+        PLAY,
+        PENALTY_FREEZE,
+        POINT_FREEZE
+    }
+    private PlayerState state;
+
+    /**
      * The queue of key presses (used by the AI player).
      */
     private final BlockingQueue<Integer> keyPresses;
