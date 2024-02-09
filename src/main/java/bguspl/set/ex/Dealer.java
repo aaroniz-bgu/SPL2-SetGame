@@ -3,6 +3,8 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.List;
+import java.util.Queue;
+import java.util.Vector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -134,4 +136,24 @@ public class Dealer implements Runnable {
     private void announceWinners() {
         // TODO implement
     }
+
+    private void removeCardHelper(int slot) {
+        Vector<Integer> tokens = table.getPlayerTokens(slot);
+        synchronized (tokens) {
+            tokens.forEach(playerId -> players[playerId].removeToken(slot));
+            table.removeCard(slot);
+        }
+    }
+
+    /**
+     * Called when a player requests a set.
+     *
+     * @param player - the player that requested the set.
+     * @param set    - the set of cards that the player requested.
+     */
+    public void requestSet(Player player, Queue<Integer> set) {
+        // TODO ADD THE REQUEST TO A QUEUE OF HANDLED REQUESTS
+    }
+
+
 }

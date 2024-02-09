@@ -226,6 +226,16 @@ public class Player implements Runnable {
     }
 
     /**
+     * Used by the dealer thread, in-case a card was removed.
+     * @param slot - the slot from which to remove the token.
+     */
+    public void removeToken(int slot) {
+        synchronized (queue) {
+            queue.remove(slot);
+        }
+    }
+
+    /**
      * Award a point to a player and perform other related actions.
      *
      * @post - the player's score is increased by 1.
