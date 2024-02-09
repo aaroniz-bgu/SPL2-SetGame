@@ -141,7 +141,6 @@ public class Player implements Runnable {
                             "Player " + playerThread.getName() + "  entered illegal state");
                     break;
             }
-
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
