@@ -242,7 +242,9 @@ public class Player implements Runnable {
         // Change player state to freeze, and give him a point.
         state = PlayerState.POINT_FREEZE;
         // Since player thread waits for decision.
-        notifyAll();
+        synchronized (this) {
+            notifyAll();
+        }
         // This part is just for demonstration in the unit tests
         int ignored = table.countCards();
         // This is already increments the score.
@@ -255,7 +257,9 @@ public class Player implements Runnable {
     public void penalty() {
         // Change the player state to freeze, and wake him up since decision was accepted.
         state = PlayerState.PENALTY_FREEZE;
-        notifyAll();
+        synchronized (this) {
+            notifyAll();
+        }
     }
 
     public int score() {
