@@ -294,6 +294,7 @@ public class Dealer implements Runnable {
                     request.player.point();
                     // Set the cards for removal in the next iteration.
                     cardsToRemove = cards;
+                    updateTimerDisplay(true);
                 } else {
                     request.player.penalty();
                 }
