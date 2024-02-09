@@ -108,8 +108,13 @@ public class Table {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) { }
 
-        cardToSlot[card] = slot;
-        slotToCard[slot] = card;
+        synchronized (slotsToPlayer.get(slot)) {
+            cardToSlot[card] = slot;
+            slotToCard[slot] = card;
+            env.ui.placeCard(card, slot);
+        }
+
+        env.logger.info(card + " card placed in slot " + slot);
     }
 
     /**
@@ -124,9 +129,23 @@ public class Table {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {}
 
-        cardToSlot[slotToCard[slot]] = null;
-        slotToCard[slot] = null;
-        slotsToPlayer.get(slot).clear(); // This is ok since we're using read-only map with vectors.
+        synchronized (slotsToPlayer.get(slot)) {
+            cardToSlot[slotToCard[slot]] = null;
+            slotToCard[slot] = null;
+            slotsToPlayer.get(slot).clear();
+            env.ui.removeCard(slot);
+        }
+
+        env.logger.info("Card removed from slot " + slot);
+    }
+
+    /**
+     * Returns the vector containing tokens of the provided slot.
+     * @param slot - the slot of the player tokens to return.
+     * @return - a vector of the players tokens placed on the slot.
+     */
+    public Vector<Integer> getPlayerTokens(int slot) {
+        return new Vector<>(slotsToPlayer.get(slot));
     }
 
     /**
@@ -137,12 +156,15 @@ public class Table {
      * @pre  - slotToCard[slot] isn't null.
      * @post - slotToPlayer[slot] contains player.
      */
-    public void placeToken(int player, int slot) { // consider synchronising this method
+    public void placeToken(int player, int slot) {
         // this might be unnecessary, since the dealer deals the tokens, but I might be wrong:
+        synchronized (slotsToPlayer.get(slot)) {
         if(slotToCard[slot] == null || cardToSlot[slotToCard[slot]] == null)
             throw new IllegalStateException("Trying to place token on empty slot");
 
         slotsToPlayer.get(slot).add(player);
+        env.ui.placeToken(player, slot);
+        }
     }
 
     /**
@@ -152,6 +174,9 @@ public class Table {
      * @return       - true iff a token was successfully removed.
      */
     public boolean removeToken(int player, int slot) {
-        return slotsToPlayer.containsKey(slot) && slotsToPlayer.get(slot).remove(Integer.valueOf(player));
+        synchronized (slotsToPlayer.get(slot)) {
+            env.ui.removeToken(player, slot);
+            return slotsToPlayer.containsKey(slot) && slotsToPlayer.get(slot).remove(Integer.valueOf(player));
+        }
     }
 }
