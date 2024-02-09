@@ -113,14 +113,13 @@ public class Player implements Runnable {
         this.state = PlayerState.PLAY;
 
         while (!terminate) {
-            // TODO implement main player loop
             switch(state) {
                 case PLAY:
-                    // TAKE FROM QUEUE AND PERFORM GAME LOGIC WITH DEALER
-
+                    // DO NOTHING
                     break;
                 case POINT_FREEZE:
-                    //CLEAR QUEUE
+                    // Empty the queue.
+                    synchronized (queue) { queue.clear(); }
                     try {
                         playerThread.sleep(env.config.pointFreezeMillis);
                     } catch (InterruptedException e) {
