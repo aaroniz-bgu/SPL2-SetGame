@@ -161,12 +161,19 @@ public class Player implements Runnable {
             int maxSlot = env.config.columns * env.config.rows;
 
             while (!terminate) {
-                // TODO
-                // keyPressed(random.nextInt(maxSlot));
-                // WHY DO WE NEED THAT?
-                try {
-                    synchronized (this) { wait(); }
-                } catch (InterruptedException ignored) { }
+                synchronized (queue) {
+                    if(queue.size() < MAX_KEY_PRESSES) {
+                        keyPressed(random.nextInt(maxSlot));
+                    } else {
+                        if(!queue.isEmpty()) {
+                            queue.poll();
+                        }
+                    }
+                }
+                // Why was it needed?
+//                try {
+//                    synchronized (this) { wait(); }
+//                } catch (InterruptedException ignored) { }
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
@@ -214,6 +221,7 @@ public class Player implements Runnable {
                         // Requesting the dealer to set the player's state.
                         dealer.requestSet(this, queue);
                         playerThread.wait();
+                        if(!human) aiThread.wait();
                     } catch (InterruptedException e) {
                         env.logger.warning(playerThread.getName()
                                 + " was interrupted, during waiting to the dealer.");
