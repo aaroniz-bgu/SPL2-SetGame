@@ -91,8 +91,7 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
-
-        keyPresses = new ArrayBlockingQueue<>(MAX_KEY_PRESSES);
+        this.state = null;
     }
 
     /**
@@ -104,17 +103,37 @@ public class Player implements Runnable {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
         if (!human) createArtificialIntelligence();
 
+        // Set the state to play, now we're not blocking this thread.
+        this.state = PlayerState.PLAY;
+
         while (!terminate) {
             // TODO implement main player loop
-            if(keyPresses.size() == MAX_KEY_PRESSES) {
-                // talk with dealer - ask him if מס הכנסה should visit.
-                try {
-                    wait();
-                } catch (InterruptedException e) {
+            switch(state) {
+                case PLAY:
+                    // TAKE FROM QUEUE AND PERFORM GAME LOGIC WITH DEALER
+
+                    break;
+                case POINT_FREEZE:
+                    //CLEAR QUEUE
+                    try {
+                        playerThread.sleep(env.config.pointFreezeMillis);
+                    } catch (InterruptedException e) {
+                        env.logger.warning(playerThread.getName() + " was interrupted, during point freeze.");
+                    }
+                    break;
+                case PENALTY_FREEZE:
+                    // DO NOTHING
+                    try {
+                        playerThread.sleep(env.config.penaltyFreezeMillis);
+                    } catch (InterruptedException e) {
+                        env.logger.warning(playerThread.getName() + " was interrupted, during penalty freeze.");
+                    }
+                    break;
+                default:
                     env.logger.warning(
-                            "Player " + id + " was interrupted while waiting for dealer");
-                }
+                            "Player " + playerThread.getName() + "  entered illegal state");
             }
+
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
