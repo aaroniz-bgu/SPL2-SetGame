@@ -2,6 +2,9 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.Queue;
+import java.util.Random;
+
 /**
  * This class manages the players' threads and data
  *
@@ -51,6 +54,32 @@ public class Player implements Runnable {
     private int score;
 
     /**
+     * The state determines what's the player's state.
+     */
+    private enum PlayerState {
+        PLAY,
+        PENALTY_FREEZE,
+        POINT_FREEZE
+    }
+    private volatile PlayerState state;
+
+    /**
+     * The queue of key presses (used by the AI player).
+     */
+    private final Queue<Integer> queue;
+
+    /**
+     * The dealer object.
+     */
+    private final Dealer dealer;
+
+    /**
+     * The maximum number of key presses that can be processed at the time in the queue.
+     * This was not mentioned as part of the configuration field that we need to support for the bonus.
+     */
+    private static final int MAX_KEY_PRESSES = 3;
+
+    /**
      * The class constructor.
      *
      * @param env    - the environment object.
@@ -64,6 +93,9 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
+        this.dealer = dealer;
+        this.queue = null; // FIXME
+        this.state = null;
     }
 
     /**
@@ -75,10 +107,40 @@ public class Player implements Runnable {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
         if (!human) createArtificialIntelligence();
 
-        while (!terminate) {
-            // TODO implement main player loop
+        // Set the state to play, now we're not blocking this thread.
+        this.state = PlayerState.PLAY;
 
-            // if(!human)
+        while (!terminate) {
+            switch(state) {
+                case PLAY:
+                    // DO NOTHING
+                    break;
+                case POINT_FREEZE:
+                    // Empty the queue.
+                    synchronized (queue) { queue.clear(); }
+                    try {
+                        playerThread.sleep(env.config.pointFreezeMillis);
+                    } catch (InterruptedException e) {
+                        env.logger.warning(playerThread.getName() + " was interrupted, during point freeze.");
+                    } finally {
+                        state = PlayerState.PLAY;
+                    }
+                    break;
+                case PENALTY_FREEZE:
+                    // DO NOTHING
+                    try {
+                        playerThread.sleep(env.config.penaltyFreezeMillis);
+                    } catch (InterruptedException e) {
+                        env.logger.warning(playerThread.getName() + " was interrupted, during penalty freeze.");
+                    } finally {
+                        state = PlayerState.PLAY;
+                    }
+                    break;
+                default:
+                    env.logger.warning(
+                            "Player " + playerThread.getName() + "  entered illegal state");
+                    break;
+            }
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -92,15 +154,18 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
+            //To simulate key presses:
+            Random random = new Random();
+            int maxSlot = env.config.columns * env.config.rows;
+
             while (!terminate) {
-                // TODO implement player key press simulator
-                // Simulate key presses using the InputManager object.
-                // Randomly generate key presses and add them to the queue of key presses.
-                // Consider avoiding to simulate press of the same key was pressed last time.
-                // If 3, and haven't cleared them, randomly clear one token.
+                // TODO
+                // keyPressed(random.nextInt(maxSlot));
+                // WHY DO WE NEED THAT?
                 try {
                     synchronized (this) { wait(); }
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) { }
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
@@ -111,8 +176,12 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
-        // Join with main thread
+        env.logger.info("Terminating " + playerThread.getName() + "...");
+        terminate = true;
+        playerThread.interrupt();
+        if(!human) aiThread.interrupt();
+        // TODO implement ? IS DONE ?
+        // Join with main thread?
     }
 
     /**
@@ -121,10 +190,46 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
-        // Change the state of the slot the player chose in the table.
-        // Consider adding a counter of how many keys are pressed atm, this counter will be updated when
-        // point are called.
+        // Ignore presses if player is frozen.
+        synchronized (queue) {
+            if (state == PlayerState.PLAY) {
+                // To prevent redundant calls to the dealer.
+                boolean changed = false;
+                try {
+                    // Handles removing / placing cards, the order of the statements is important
+                    // since table.removeToken throws Exception.
+                    if (!table.removeToken(id, slot) && !queue.remove(slot) && queue.size() < MAX_KEY_PRESSES) {
+                        table.placeToken(id, slot);
+                        queue.add(slot);
+                        changed = true;
+                    }
+                } catch (IllegalStateException cardRemoved) {
+                    env.logger.warning("Player " + id + " tried to place token on empty slot");
+                }
+                // Before showcasing on GitHub return this mess to the main loop, this is here
+                // Just because of the assignment requirements.
+                if (queue.size() == MAX_KEY_PRESSES && changed) {
+                    try {
+                        // Requesting the dealer to set the player's state.
+                        dealer.requestSet(this, queue);
+                        playerThread.wait();
+                    } catch (InterruptedException e) {
+                        env.logger.warning(playerThread.getName()
+                                + " was interrupted, during waiting to the dealer.");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Used by the dealer thread, in-case a card was removed.
+     * @param slot - the slot from which to remove the token.
+     */
+    public void removeToken(int slot) {
+        synchronized (queue) {
+            queue.remove(slot);
+        }
     }
 
     /**
@@ -134,9 +239,13 @@ public class Player implements Runnable {
      * @post - the player's score is updated in the ui.
      */
     public void point() {
-        // TODO implement
-        // notify since we're waiting to know if we we're granted points
-        int ignored = table.countCards(); // this part is just for demonstration in the unit tests
+        // Change player state to freeze, and give him a point.
+        state = PlayerState.POINT_FREEZE;
+        // Since player thread waits for decision.
+        notifyAll();
+        // This part is just for demonstration in the unit tests
+        int ignored = table.countCards();
+        // This is already increments the score.
         env.ui.setScore(id, ++score);
     }
 
@@ -144,8 +253,9 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        // TODO implement
-        // notify since we're waiting to know if we we're penalized
+        // Change the player state to freeze, and wake him up since decision was accepted.
+        state = PlayerState.PENALTY_FREEZE;
+        notifyAll();
     }
 
     public int score() {
