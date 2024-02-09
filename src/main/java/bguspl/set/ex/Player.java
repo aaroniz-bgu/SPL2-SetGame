@@ -147,18 +147,18 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
+            //To simulate key presses:
             Random random = new Random();
             int maxSlot = env.config.columns * env.config.rows;
 
             while (!terminate) {
-                // todo the rest
-                keyPressed(random.nextInt(maxSlot));
-
-                // WHY DID WE NEED THAT?
-//                try {
-//                    keyPressed(random.nextInt(maxSlot));
-//                    synchronized (this) { wait(); }
-//                } catch (InterruptedException ignored) { }
+                // TODO
+                // keyPressed(random.nextInt(maxSlot));
+                // WHY DO WE NEED THAT?
+                try {
+                    synchronized (this) { wait(); }
+                } catch (InterruptedException ignored) { }
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
