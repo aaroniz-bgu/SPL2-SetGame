@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TableTest {
 
@@ -62,29 +63,27 @@ class TableTest {
         assertEquals(2, (int) cardToSlot[8]);
     }
 
+    // Who ever wrote these tests doesn't follow naming conventions @aaroniz-bgu
+
     @Test
     void countCards_NoSlotsAreFilled() {
-
         assertEquals(0, table.countCards());
     }
 
     @Test
     void countCards_SomeSlotsAreFilled() {
-
         int slotsFilled = fillSomeSlots();
         assertEquals(slotsFilled, table.countCards());
     }
 
     @Test
     void countCards_AllSlotsAreFilled() {
-
         fillAllSlots();
         assertEquals(slotToCard.length, table.countCards());
     }
 
     @Test
     void placeCard_SomeSlotsAreFilled() throws InterruptedException {
-
         fillSomeSlots();
         placeSomeCardsAndAssert();
     }
@@ -93,6 +92,36 @@ class TableTest {
     void placeCard_AllSlotsAreFilled() throws InterruptedException {
         fillAllSlots();
         placeSomeCardsAndAssert();
+    }
+
+    // My tests:
+
+    @Test
+    void testPlaceToken() {
+        fillSomeSlots();
+        table.placeToken(1, 1);
+        assertEquals(1, table.slotsToPlayer.get(1).get(0));
+    }
+
+    @Test
+    void testRemoveToken() {
+        fillSomeSlots();
+        table.placeToken(1, 1);
+        table.removeToken(1, 1);
+        assertEquals(0, table.slotsToPlayer.get(1).size());
+    }
+
+    @Test
+    void testRemoveTokenizedCard() {
+        fillSomeSlots();
+        table.placeToken(1, 1);
+        table.removeCard(1);
+        assertEquals(0, table.slotsToPlayer.get(1).size());
+    }
+
+    @Test
+    void testTokenizeEmptySlot() {
+        assertThrows(IllegalStateException.class, () -> table.placeToken(1, 1));
     }
 
     static class MockUserInterface implements UserInterface {
@@ -120,7 +149,7 @@ class TableTest {
         public void removeToken(int player, int slot) {}
         @Override
         public void announceWinner(int[] players) {}
-    };
+    }
 
     static class MockUtil implements Util {
         @Override
