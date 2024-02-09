@@ -132,6 +132,8 @@ public class Table {
         synchronized (slotsToPlayer.get(slot)) {
             cardToSlot[slotToCard[slot]] = null;
             slotToCard[slot] = null;
+            slotsToPlayer.get(slot)
+                    .forEach(player -> env.ui.removeToken(player, slot));
             slotsToPlayer.get(slot).clear();
             env.ui.removeCard(slot);
         }
@@ -178,5 +180,39 @@ public class Table {
             env.ui.removeToken(player, slot);
             return slotsToPlayer.containsKey(slot) && slotsToPlayer.get(slot).remove(Integer.valueOf(player));
         }
+    }
+
+    /**
+     * Returns the card placed in the specified slot.
+     * @param slot - the slot to return the card from.
+     * @return - the card placed in the slot.
+     */
+    public int getCardAtSlot(int slot) {
+        // No need to synchronize, only the dealer thread uses this, therefore,
+        // card cannot be removed at this point.
+        return slotToCard[slot];
+    }
+
+    /**
+     * Returns the slot in which the card is placed.
+     * @param card - the card to return the slot of.
+     * @return - the slot in which the card is placed.
+     */
+    public int getSlotOfCard(int card) {
+        return cardToSlot[card];
+    }
+
+    /**
+     * Returns the amount of slots present in the table.
+     */
+    public int slotCount() {
+        return slotToCard.length;
+    }
+
+    /**
+     * Returns if the card is currently on the table.
+     */
+    public boolean containsCard(int card) {
+        return cardToSlot[card] != null;
     }
 }
