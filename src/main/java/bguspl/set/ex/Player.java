@@ -62,7 +62,7 @@ public class Player implements Runnable {
         PENALTY_FREEZE,
         POINT_FREEZE
     }
-    private PlayerState state;
+    private volatile PlayerState state;
 
     /**
      * The queue of key presses (used by the AI player).
@@ -119,6 +119,8 @@ public class Player implements Runnable {
                         playerThread.sleep(env.config.pointFreezeMillis);
                     } catch (InterruptedException e) {
                         env.logger.warning(playerThread.getName() + " was interrupted, during point freeze.");
+                    } finally {
+                        state = PlayerState.PLAY;
                     }
                     break;
                 case PENALTY_FREEZE:
@@ -127,6 +129,8 @@ public class Player implements Runnable {
                         playerThread.sleep(env.config.penaltyFreezeMillis);
                     } catch (InterruptedException e) {
                         env.logger.warning(playerThread.getName() + " was interrupted, during penalty freeze.");
+                    } finally {
+                        state = PlayerState.PLAY;
                     }
                     break;
                 default:
