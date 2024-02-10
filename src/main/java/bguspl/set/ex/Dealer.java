@@ -282,8 +282,8 @@ public class Dealer implements Runnable {
             // Since a request might be changed due to other request being handled, we need to make sure that
             // this request has 3 tokens.
             while(request.set.size() != 3 && !requestQueue.isEmpty()) {
-                request = requestQueue.poll();
                 request.player.irrelevantSetRequest();
+                request = requestQueue.poll();
             }
 
             // If we found a request with 3 tokens, validate it
