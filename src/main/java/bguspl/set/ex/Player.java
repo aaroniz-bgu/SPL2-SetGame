@@ -61,6 +61,7 @@ public class Player implements Runnable {
     private enum PlayerState {
         PLAY,
         PENALTY_FREEZE,
+        WAIT_DEALER,
         POINT_FREEZE
     }
     private volatile PlayerState state;
@@ -120,24 +121,21 @@ public class Player implements Runnable {
                 case POINT_FREEZE:
                     // Empty the queue.
                     synchronized (queue) { queue.clear(); }
-                    try {
-                        playerThread.sleep(env.config.pointFreezeMillis);
-                    } catch (InterruptedException e) {
-                        env.logger.warning(playerThread.getName() + " was interrupted, during point freeze.");
-                    } finally {
-                        state = PlayerState.PLAY;
-                    }
+                    freeze(env.config.pointFreezeMillis);
                     break;
                 case PENALTY_FREEZE:
-                    // DO NOTHING
-                    try {
-                        playerThread.sleep(env.config.penaltyFreezeMillis);
-                    } catch (InterruptedException e) {
-                        env.logger.warning(playerThread.getName() + " was interrupted, during penalty freeze.");
-                    } finally {
-                        state = PlayerState.PLAY;
-                    }
+                    freeze(env.config.penaltyFreezeMillis);
                     break;
+                case WAIT_DEALER:
+                        try {
+                            synchronized (this) {
+                                wait();
+                            }
+                        } catch (InterruptedException e) {
+                            env.logger.warning(
+                                    playerThread.getName() + " was interrupted, during waiting to the dealer.");
+                        }
+                        break;
                 default:
                     env.logger.warning(
                             "Player " + playerThread.getName() + "  entered illegal state");
@@ -146,6 +144,25 @@ public class Player implements Runnable {
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
+    }
+
+    /**
+     * Freezes the player for a given number of milliseconds & updates the UI.
+     * @param millis - how long to freeze the player.
+     */
+    private void freeze(long millis) {
+        long end = System.currentTimeMillis() + millis;
+        while (end - System.currentTimeMillis() > 0 && !terminate) {
+            env.ui.setFreeze(id, end - System.currentTimeMillis());
+            try {
+                Thread.currentThread().sleep(100);
+            } catch (InterruptedException ignored) {
+                env.logger.warning(
+                        playerThread.getName() + " was interrupted, during a freeze.");
+            }
+        }
+        env.ui.setFreeze(id, 0);
+        state = PlayerState.PLAY;
     }
 
     /**
@@ -160,7 +177,16 @@ public class Player implements Runnable {
             //To simulate key presses:
             Random random = new Random();
             int maxSlot = env.config.columns * env.config.rows;
-
+            if(state == PlayerState.WAIT_DEALER) {
+                synchronized (this) {
+                    try{
+                        wait();
+                    } catch (InterruptedException e) {
+                        env.logger.warning(
+                                playerThread.getName() + " was interrupted, during waiting to the dealer.");
+                    }
+                }
+            }
             while (!terminate) {
                 if(state==PlayerState.PLAY)
                     synchronized (queue) {
@@ -206,9 +232,13 @@ public class Player implements Runnable {
                 try {
                     // Handles removing / placing cards, the order of the statements is important
                     // since table.removeToken throws Exception.
-                    if (!table.removeToken(id, slot) && !queue.remove(slot) && queue.size() < MAX_KEY_PRESSES) {
+                    if ( // under any circumstances, DO NOT change to double ampersand!!! I REPEAT DON'T
+                            !table.removeToken(id, slot)
+                            & !queue.remove(slot)
+                            & queue.size() < MAX_KEY_PRESSES
+                    ) {
                         table.placeToken(id, slot);
-                        queue.add(slot);
+                        queue.offer(slot);
                         changed = true;
                     }
                 } catch (IllegalStateException cardRemoved) {
@@ -217,15 +247,9 @@ public class Player implements Runnable {
                 // Before showcasing on GitHub return this mess to the main loop, this is here
                 // Just because of the assignment requirements.
                 if (queue.size() == MAX_KEY_PRESSES && changed) {
-                    try {
-                        // Requesting the dealer to set the player's state.
-                        dealer.requestSet(this, queue);
-                        playerThread.wait();
-                        if(!human) aiThread.wait();
-                    } catch (InterruptedException e) {
-                        env.logger.warning(playerThread.getName()
-                                + " was interrupted, during waiting to the dealer.");
-                    }
+                    // Requesting the dealer to set the player's state.
+                    dealer.requestSet(this, queue);
+                    state = PlayerState.WAIT_DEALER;
                 }
             }
         }
