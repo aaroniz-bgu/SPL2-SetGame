@@ -174,6 +174,7 @@ public class Player implements Runnable {
             //To simulate key presses:
             Random random = new Random();
             int maxSlot = env.config.columns * env.config.rows;
+
             while (!terminate) {
                 if(state == PlayerState.WAIT_DEALER) {
                     synchronized (this) {
