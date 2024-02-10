@@ -127,10 +127,7 @@ public class Player implements Runnable {
                     freeze(env.config.penaltyFreezeMillis);
                     break;
                 case WAIT_DEALER:
-                        try {
-                            synchronized (this) {
-                                wait();
-                            }
+                        try { synchronized (this) { wait(); }
                         } catch (InterruptedException e) {
                             env.logger.warning(
                                     playerThread.getName() + " was interrupted, during waiting to the dealer.");
@@ -180,9 +177,7 @@ public class Player implements Runnable {
             while (!terminate) {
                 if(state == PlayerState.WAIT_DEALER) {
                     synchronized (this) {
-                        try{
-                            wait();
-                        } catch (InterruptedException e) {
+                        try{ wait(); } catch (InterruptedException e) {
                             env.logger.warning(
                                     playerThread.getName() + " was interrupted, during waiting to the dealer.");
                         }
@@ -194,11 +189,10 @@ public class Player implements Runnable {
                             keyPressed(random.nextInt(maxSlot));
                         } else {
                             if(!queue.isEmpty()) {
-                                queue.poll();
+                                keyPressed(queue.peek());
                             }
                         }
                     }
-                // Why was it needed?
 //                try {
 //                    synchronized (this) { wait(); }
 //                } catch (InterruptedException ignored) { }
