@@ -177,17 +177,17 @@ public class Player implements Runnable {
             //To simulate key presses:
             Random random = new Random();
             int maxSlot = env.config.columns * env.config.rows;
-            if(state == PlayerState.WAIT_DEALER) {
-                synchronized (this) {
-                    try{
-                        wait();
-                    } catch (InterruptedException e) {
-                        env.logger.warning(
-                                playerThread.getName() + " was interrupted, during waiting to the dealer.");
+            while (!terminate) {
+                if(state == PlayerState.WAIT_DEALER) {
+                    synchronized (this) {
+                        try{
+                            wait();
+                        } catch (InterruptedException e) {
+                            env.logger.warning(
+                                    playerThread.getName() + " was interrupted, during waiting to the dealer.");
+                        }
                     }
                 }
-            }
-            while (!terminate) {
                 if(state==PlayerState.PLAY)
                     synchronized (queue) {
                         if(queue.size() < MAX_KEY_PRESSES) {
