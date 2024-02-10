@@ -158,7 +158,7 @@ public class Dealer implements Runnable {
      * Check if any cards can be removed from the deck and placed on the table.
      */
     private void placeCardsOnTable() {
-        if(reshuffleTime >= System.currentTimeMillis()) {
+        if(reshuffleTime >= System.currentTimeMillis()) { // FIXME
             env.logger.info("Shuffling deck...");
             Collections.shuffle(deck);
         }
