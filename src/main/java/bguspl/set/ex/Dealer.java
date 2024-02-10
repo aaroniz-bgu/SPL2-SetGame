@@ -183,8 +183,7 @@ public class Dealer implements Runnable {
         if(requestQueue.isEmpty()) {
             try {
                 Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-            }
+            } catch (InterruptedException ignored) { }
         }
     }
 
