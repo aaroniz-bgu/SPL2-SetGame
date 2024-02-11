@@ -12,3 +12,4 @@ target/*
 logs/
 logs/*
 #
+/src/test/java/bguspl/set/ex/MainTest.java
