@@ -267,13 +267,11 @@ public class Player implements Runnable {
      * @post - the player's score is increased by 1.
      * @post - the player's score is updated in the ui.
      */
-    public void point() {
+    public synchronized void point() {
         // Change player state to freeze, and give him a point.
         state = PlayerState.POINT_FREEZE;
         // Since player thread waits for decision.
-        synchronized (this) {
-            notifyAll();
-        }
+        notifyAll();
         // This part is just for demonstration in the unit tests
         int ignored = table.countCards();
         // This is already increments the score.
@@ -283,21 +281,17 @@ public class Player implements Runnable {
     /**
      * Penalize a player and perform other related actions.
      */
-    public void penalty() {
+    public synchronized void penalty() {
         // Change the player state to freeze, and wake him up since decision was accepted.
         state = PlayerState.PENALTY_FREEZE;
-        synchronized (this) {
-            notifyAll();
-        }
+        notifyAll();
     }
 
     /**
      * In case the tokens we're removed after requesting a set.
      */
-    public void irrelevantSetRequest() {
-        synchronized (this) {
-            notifyAll();
-        }
+    public synchronized void irrelevantSetRequest() {
+        notifyAll();
     }
 
     public int score() {
