@@ -146,13 +146,14 @@ public class Player implements Runnable {
     /**
      * Freezes the player for a given number of milliseconds & updates the UI.
      * @param millis - how long to freeze the player.
+     * @implNote - this is a busy wait function.
      */
     private void freeze(long millis) {
         long end = System.currentTimeMillis() + millis;
         while (end - System.currentTimeMillis() > 0 && !terminate) {
             env.ui.setFreeze(id, end - System.currentTimeMillis());
             try {
-                Thread.currentThread().sleep(100);
+                Thread.currentThread().sleep(900);
             } catch (InterruptedException ignored) {
                 env.logger.warning(
                         playerThread.getName() + " was interrupted, during a freeze.");
