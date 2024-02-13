@@ -281,7 +281,7 @@ public class Dealer implements Runnable {
                     requestSet(player, playerTokens[player.id]);
                     return true;
                 }
-            } catch (UnsupportedOperationException ex) {
+            } catch (IllegalStateException ex) {
                 env.logger.info(player + " tried to place a token on an empty slot");
             }
         } else {
