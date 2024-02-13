@@ -130,6 +130,8 @@ public class Table {
         } catch (InterruptedException ignored) {}
 
         synchronized (slotsToPlayer.get(slot)) {
+            if (slotToCard[slot]==null)
+                return;
             cardToSlot[slotToCard[slot]] = null;
             slotToCard[slot] = null;
             slotsToPlayer.get(slot)
