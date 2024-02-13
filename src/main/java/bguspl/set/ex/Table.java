@@ -130,6 +130,7 @@ public class Table {
         } catch (InterruptedException ignored) {}
 
         synchronized (slotsToPlayer.get(slot)) {
+            if(slotToCard[slot] == null) return;
             cardToSlot[slotToCard[slot]] = null;
             slotToCard[slot] = null;
             slotsToPlayer.get(slot)
@@ -215,4 +216,13 @@ public class Table {
     public boolean containsCard(int card) {
         return cardToSlot[card] != null;
     }
+
+//    /**
+//     * Returns true iff the token exists in the slot.
+//     */
+//    public boolean containsToken(int player, int slot) {
+//        synchronized (slotsToPlayer.get(slot)) {
+//            return slotsToPlayer.get(slot).contains(player);
+//        }
+//    }
 }
