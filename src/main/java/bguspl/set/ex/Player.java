@@ -171,9 +171,7 @@ public class Player implements Runnable {
                     notifyAll();
                     try {
                         wait();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                    } catch (InterruptedException e) { }
                 }
             }
 
