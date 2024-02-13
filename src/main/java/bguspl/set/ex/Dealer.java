@@ -72,7 +72,7 @@ public class Dealer implements Runnable {
     private Thread dealerThread;
 
     /**
-     * The slots to remove from the table.
+     * Temporarily stores the slots to remove from the table.
      */
     private int[] cardsToRemove;
 
@@ -123,11 +123,13 @@ public class Dealer implements Runnable {
         updateTimerDisplay(true);
 
         // Main dealer loop
-        while (!shouldFinish()) {
+        while (!terminate) {
             placeCardsOnTable();
-            updateTimerDisplay(true);
-            timerLoop(); // Either here or in the timerLoop you should check for the???
-            removeAllCardsFromTable();
+            if(!terminate) {
+                updateTimerDisplay(true);
+                timerLoop(); // Either here or in the timerLoop you should check for the???
+                removeAllCardsFromTable();
+            }
         }
         announceWinners();
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -182,18 +184,22 @@ public class Dealer implements Runnable {
      * Check if any cards can be removed from the deck and placed on the table.
      */
     private void placeCardsOnTable() {
-        if(reshuffleTime <= System.currentTimeMillis()) {
-            env.logger.info("Shuffling deck...");
-            Collections.shuffle(deck);
-        }
-        boolean placed = true;
-        while(!deletedSlots.isEmpty() && placed) {
-            placed = false;
-            int slot = deletedSlots.poll();
-            for(int i = 0; i < deck.size() && !placed; i++) {
-                if(!table.containsCard(deck.get(i))) {
-                    table.placeCard(deck.get(i), slot);
-                    placed = true;
+        if(shouldFinish()) {
+            terminate();
+        } else {
+            if(reshuffleTime <= System.currentTimeMillis()) {
+                env.logger.info("Shuffling deck...");
+                Collections.shuffle(deck);
+            }
+            boolean placed = true;
+            while(!deletedSlots.isEmpty() && placed) {
+                placed = false;
+                int slot = deletedSlots.poll();
+                for(int i = 0; i < deck.size() && !placed; i++) {
+                    if(!table.containsCard(deck.get(i))) {
+                        table.placeCard(deck.get(i), slot);
+                        placed = true;
+                    }
                 }
             }
         }
