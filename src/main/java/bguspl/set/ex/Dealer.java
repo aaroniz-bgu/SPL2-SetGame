@@ -187,16 +187,16 @@ public class Dealer implements Runnable {
         if(shouldFinish()) {
             terminate();
         } else {
-            if(reshuffleTime <= System.currentTimeMillis()) {
+            if (reshuffleTime <= System.currentTimeMillis()) {
                 env.logger.info("Shuffling deck...");
                 Collections.shuffle(deck);
             }
             boolean placed = true;
-            while(!deletedSlots.isEmpty() && placed) {
+            while (!deletedSlots.isEmpty() && placed) {
                 placed = false;
                 int slot = deletedSlots.poll();
-                for(int i = 0; i < deck.size() && !placed; i++) {
-                    if(!table.containsCard(deck.get(i))) {
+                for (int i = 0; i < deck.size() && !placed; i++) {
+                    if (!table.containsCard(deck.get(i))) {
                         table.placeCard(deck.get(i), slot);
                         placed = true;
                     }
