@@ -58,14 +58,6 @@ public class Player implements Runnable {
     private int score;
 
     /**
-     * Called by the dealer thread.
-     * If a set request was invalidated return to play state, so they can keep listening to key presses.
-     */
-    public void irrelaventRequest() {
-        state = PlayerState.PLAY;
-    }
-
-    /**
      * The state determines what's the player's state.
      */
     private enum PlayerState {
@@ -145,6 +137,7 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the player thread.
      * Freezes the player for a given number of milliseconds & updates the UI.
      * @param millis - how long to freeze the player.
      * @implNote - this is a busy wait function.
@@ -165,6 +158,7 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the player thread.
      * Creates an additional thread for an AI (computer) player. The main loop of this thread repeatedly generates
      * key presses. If the queue of key presses is full, the thread waits until it is not full.
      */
@@ -187,6 +181,7 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the dealer thread.
      * Called when the game should be terminated.
      */
     public void terminate() {
@@ -197,6 +192,7 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the EventListener thread and the AI thread.
      * This method is called when a key is pressed.
      *
      * @param slot - the slot corresponding to the key pressed.
@@ -214,6 +210,7 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the player thread.
      * Dispatches the action in the queue.
      */
     private synchronized void performAction() {
@@ -227,6 +224,7 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the dealer thread.
      * Award a point to a player and perform other related actions.
      *
      * @post - the player's score is increased by 1.
@@ -244,12 +242,21 @@ public class Player implements Runnable {
     }
 
     /**
+     * Called by the dealer thread.
      * Penalize a player and perform other related actions.
      */
     public synchronized void penalty() {
         // Change the player state to freeze, and wake him up since decision was accepted.
         state = PlayerState.PENALTY_FREEZE;
         notifyAll();
+    }
+
+    /**
+     * Called by the dealer thread.
+     * If a set request was invalidated return to play state, so they can keep listening to key presses.
+     */
+    public void irrelevantRequest() {
+        state = PlayerState.PLAY;
     }
 
     public int score() {
