@@ -125,12 +125,6 @@ public class Player implements Runnable {
                 default:
                     break;
             }
-            synchronized (this) {
-                try {
-                    wait();
-                } catch (InterruptedException ignore) {
-                }
-            }
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -172,7 +166,15 @@ public class Player implements Runnable {
             int maxSlot = env.config.columns * env.config.rows;
 
             while (!terminate) {
-                keyPressed(random.nextInt(maxSlot));
+                queue.offer(random.nextInt(maxSlot));
+                synchronized (this) {
+                    notifyAll();
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
 
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -221,6 +223,11 @@ public class Player implements Runnable {
                 state = PlayerState.WAIT_DEALER;
             }
         }
+        notifyAll();
+        try {
+            wait();
+        } catch (InterruptedException ignore) {
+        }
     }
 
     /**
@@ -255,8 +262,9 @@ public class Player implements Runnable {
      * Called by the dealer thread.
      * If a set request was invalidated return to play state, so they can keep listening to key presses.
      */
-    public void irrelevantRequest() {
+    public synchronized void irrelevantRequest() {
         state = PlayerState.PLAY;
+        notifyAll();
     }
 
     public int score() {
@@ -265,6 +273,6 @@ public class Player implements Runnable {
 
     @Override
     public String toString() {
-        return "Player " + this.id;
+        return "Player " + (this.id + 1);
     }
 }

@@ -302,7 +302,10 @@ public class Dealer implements Runnable {
         if(!shuffle) deck.remove(table.slotToCard[slot]);
         Vector<Integer> tokens = table.getPlayerTokens(slot);
         synchronized (tokens) {
-            tokens.forEach(playerId -> playerTokens[playerId].remove(Integer.valueOf(slot)));
+            tokens.forEach(playerId -> {
+                playerTokens[playerId].remove(Integer.valueOf(slot));
+                players[playerId].irrelevantRequest();
+            });
             table.removeCard(slot);
         }
     }
