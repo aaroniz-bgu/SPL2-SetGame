@@ -228,7 +228,12 @@ public class Dealer implements Runnable {
         }
 
         boolean warn = reshuffleTime - System.currentTimeMillis() < env.config.turnTimeoutWarningMillis;
-        env.ui.setCountdown(reshuffleTime - System.currentTimeMillis(), warn);
+        long disp = reshuffleTime - System.currentTimeMillis();
+        if(disp > 0) {
+            env.ui.setCountdown(disp, warn);
+        } else {
+            env.ui.setCountdown(0, true);
+        }
     }
 
     /**
@@ -281,7 +286,7 @@ public class Dealer implements Runnable {
                     requestSet(player, playerTokens[player.id]);
                     return true;
                 }
-            } catch (UnsupportedOperationException ex) {
+            } catch (IllegalStateException ex) {
                 env.logger.info(player + " tried to place a token on an empty slot");
             }
         } else {
@@ -302,7 +307,10 @@ public class Dealer implements Runnable {
         if(!shuffle) deck.remove(table.slotToCard[slot]);
         Vector<Integer> tokens = table.getPlayerTokens(slot);
         synchronized (tokens) {
-            tokens.forEach(playerId -> playerTokens[playerId].remove(Integer.valueOf(slot)));
+            tokens.forEach(playerId -> {
+                playerTokens[playerId].remove(Integer.valueOf(slot));
+                players[playerId].irrelevantRequest();
+            });
             table.removeCard(slot);
         }
     }
