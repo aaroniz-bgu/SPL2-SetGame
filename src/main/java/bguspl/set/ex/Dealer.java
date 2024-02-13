@@ -228,7 +228,12 @@ public class Dealer implements Runnable {
         }
 
         boolean warn = reshuffleTime - System.currentTimeMillis() < env.config.turnTimeoutWarningMillis;
-        env.ui.setCountdown(reshuffleTime - System.currentTimeMillis(), warn);
+        long disp = reshuffleTime - System.currentTimeMillis();
+        if(disp > 0) {
+            env.ui.setCountdown(disp, warn);
+        } else {
+            env.ui.setCountdown(0, true);
+        }
     }
 
     /**
