@@ -82,6 +82,29 @@ public class Dealer implements Runnable {
      */
     private final int MAX_KEY_PRESSES;
 
+    /**
+     * The different game types ( for bonus )
+     * Normal - normal game mode, normal timer, reshuffles the board after set time (even if no sets)
+     * No Timer - no timer, however makes sure there is always at least 1 set on the table
+     * Display Last Action - timer displays last time a set was found, must always make sure there is a set on the table.
+     */
+    private enum GameType {
+        NORMAL,
+        NOTIMER,
+        DISPLAYLASTACTION
+    }
+
+    private long lastActionTimestamp;
+
+    /**
+     * Indicates what the game type is, out of the three GameTypes: Normal, No Timer, Display Last Action.
+     * Set in the config file at the start of the game.
+     * Normal - normal game mode, normal timer, reshuffles the board after set time (even if no sets)
+     * No Timer - no timer, however makes sure there is always at least 1 set on the table
+     * Display Last Action - timer displays last time a set was found, must always make sure there is a set on the table.
+     */
+    private final GameType gameType;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
@@ -95,6 +118,22 @@ public class Dealer implements Runnable {
         }
         requestQueue = new LinkedList<>();
         deletedSlots = new LinkedList<>();
+
+        long turnTimeout = env.config.turnTimeoutMillis;
+
+        // Setting the game type according to the turn time out in config file
+        if (turnTimeout > 0) {
+            gameType = GameType.NORMAL;
+            env.logger.info("Set game mode as: Normal");
+        }
+        else if (turnTimeout == 0) {
+            gameType = GameType.DISPLAYLASTACTION;
+            env.logger.info("Set game mode as: Display last action");
+        }
+        else {
+            gameType = GameType.NOTIMER;
+            env.logger.info("Set game mode as: No timer");
+        }
 
         // Add all the slots to the deleted slots queue:
         for(int i = 0; i < table.slotCount(); i++) {
@@ -150,13 +189,38 @@ public class Dealer implements Runnable {
      * Called by the dealer thread.
      * The inner loop of the dealer thread that runs as long as the countdown did not time out.
      */
-    private void timerLoop() {
-        while (!terminate && System.currentTimeMillis() < reshuffleTime) {
-            sleepUntilWokenOrTimeout();
-            updateTimerDisplay(false);
-            validateSet();
-            removeCardsFromTable();
-            placeCardsOnTable();
+        private void timerLoop() {
+        switch (gameType) {
+            case NORMAL:
+                while (!terminate && System.currentTimeMillis() < reshuffleTime) {
+                    sleepUntilWokenOrTimeout();
+                    updateTimerDisplay(false);
+                    validateSet();
+                    removeCardsFromTable();
+                    placeCardsOnTable();
+                }
+                break;
+            case NOTIMER:
+                while (!terminate) {
+                    ensureLegalSetExists();
+                    sleepUntilWokenOrTimeout();
+                    validateSet();
+                    removeCardsFromTable();
+                    placeCardsOnTable();
+                }
+                break;
+            case DISPLAYLASTACTION:
+                while (!terminate) {
+                    ensureLegalSetExists();
+                    sleepUntilWokenOrTimeout();
+                    updateTimerDisplay(false);
+                    validateSet();
+                    removeCardsFromTable();
+                    placeCardsOnTable();
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -189,6 +253,41 @@ public class Dealer implements Runnable {
             Arrays.stream(cardsToRemove).forEach(i -> removeCardHelper(table.getSlotOfCard(i)));
         cardsToRemove = null;
     }
+
+    //<editor-fold desc="Helper functions for other game modes">
+    /**
+     * Makes sure there is a legal set on the table, if there isn't redeals the table until there is
+      */
+    private void ensureLegalSetExists() {
+        List<Integer> currentCardsOnTable = getCurrentCardsOnTable();
+        while (env.util.findSets(currentCardsOnTable, 1).isEmpty()) {
+            env.logger.info("No sets, redrawing...");
+            reshuffleAndRedraw();
+            currentCardsOnTable = getCurrentCardsOnTable();
+            // Update last action
+            lastActionTimestamp = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Gets all the current cards on the table
+     * @return a list with the current cards on the table
+     */
+    private List<Integer> getCurrentCardsOnTable() {
+        return Arrays.stream(table.slotToCard)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Removes all the cards, shuffles the deck and redeals
+     */
+    private void reshuffleAndRedraw() {
+        removeAllCardsFromTable();
+        Collections.shuffle(deck);
+        placeCardsOnTable();
+    }
+    //</editor-fold>
 
     /**
      * Called by the dealer thread.
@@ -234,16 +333,25 @@ public class Dealer implements Runnable {
      * Reset and/or update the countdown and the countdown display.
      */
     private void updateTimerDisplay(boolean reset) {
+        if (gameType == GameType.NOTIMER)
+            return; // No timer in this game mode
+
         if(reset) {
             reshuffleTime = System.currentTimeMillis() + env.config.turnTimeoutMillis;
         }
 
-        boolean warn = reshuffleTime - System.currentTimeMillis() < env.config.turnTimeoutWarningMillis;
-        long disp = reshuffleTime - System.currentTimeMillis();
-        if(disp > 0) {
-            env.ui.setCountdown(disp, warn);
-        } else {
-            env.ui.setCountdown(0, true);
+        if (gameType == GameType.NORMAL) {
+            long disp = reshuffleTime - System.currentTimeMillis();
+            boolean warn = disp < env.config.turnTimeoutWarningMillis;
+            if (disp > 0) {
+                env.ui.setCountdown(disp, warn);
+            } else {
+                env.ui.setCountdown(0, true);
+            }
+        }
+        else if (gameType == GameType.DISPLAYLASTACTION) {
+            long elapsed = System.currentTimeMillis() - lastActionTimestamp;
+            env.ui.setElapsed(elapsed);
         }
     }
 
@@ -379,6 +487,8 @@ public class Dealer implements Runnable {
                     request.player.point();
                     // Set the cards for removal in the next iteration.
                     cardsToRemove = cards;
+                    // Update last action since set was found.
+                    lastActionTimestamp = System.currentTimeMillis();
                     updateTimerDisplay(true);
                 } else {
                     request.player.penalty();
