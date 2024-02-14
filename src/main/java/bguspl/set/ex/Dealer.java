@@ -117,8 +117,20 @@ public class Dealer implements Runnable {
         Arrays.stream(players)
                 .forEach(player -> new Thread(player, "player " + (player.id + 1)).start());
 
+        // Run the main loop
+        runLoop();
+
+        announceWinners();
+        env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
+    }
+
+    /**
+     * The main loop for the dealer thread, changes according to the game mode
+     */
+    private void runLoop() {
         // First Shuffle.
         Collections.shuffle(deck);
+        lastActionTimestamp = System.currentTimeMillis();
         // So we won't start in the year 3024.
         updateTimerDisplay(true);
 
@@ -127,12 +139,11 @@ public class Dealer implements Runnable {
             placeCardsOnTable();
             if(!terminate) {
                 updateTimerDisplay(true);
-                timerLoop(); // Either here or in the timerLoop you should check for the???
+                timerLoop();
                 removeAllCardsFromTable();
             }
         }
-        announceWinners();
-        env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
+
     }
 
     /**
