@@ -78,7 +78,7 @@ public class Player implements Runnable {
      */
     private final Dealer dealer;
 
-    private static final Long FREEZE_MILLIS = 900L;
+    private static final long FREEZE_MILLIS = 900L;
 
     /**
      * The class constructor.
