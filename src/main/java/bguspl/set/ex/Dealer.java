@@ -307,6 +307,7 @@ public class Dealer implements Runnable {
                 env.logger.info("Shuffling deck...");
                 Collections.shuffle(deck);
             }
+            boolean hints  = !deletedSlots.isEmpty();
             boolean placed = true;
             while (!deletedSlots.isEmpty() && placed) {
                 placed = false;
@@ -317,6 +318,10 @@ public class Dealer implements Runnable {
                         placed = true;
                     }
                 }
+            }
+
+            if(hints && env.config.hints) {
+                table.hints();
             }
         }
     }
