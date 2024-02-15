@@ -78,6 +78,8 @@ public class Player implements Runnable {
      */
     private final Dealer dealer;
 
+    private static final Long FREEZE_MILLIS = 900L;
+
     /**
      * The class constructor.
      *
@@ -141,7 +143,7 @@ public class Player implements Runnable {
         while (end - System.currentTimeMillis() > 0 && !terminate) {
             env.ui.setFreeze(id, end - System.currentTimeMillis());
             try {
-                Thread.currentThread().sleep(900);
+                Thread.currentThread().sleep(FREEZE_MILLIS);
             } catch (InterruptedException ignored) {
                 env.logger.warning(
                         playerThread.getName() + " was interrupted, during a freeze.");
