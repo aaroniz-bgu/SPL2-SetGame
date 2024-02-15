@@ -361,17 +361,23 @@ public class Dealer implements Runnable {
 
             // If we found a request with 3 tokens, validate it
             if(request.set.size() == MAX_KEY_PRESSES) {
-                int[] cards = request.set.stream()
-                        .mapToInt(table::getCardAtSlot)
-                        .toArray();
-                if(env.util.testSet(cards)) {
-                    request.player.point();
-                    // Set the cards for removal in the next iteration.
-                    cardsToRemove = cards;
-                    updateTimerDisplay(true);
-                } else {
-                    request.player.penalty();
+                try {
+                    int[] cards = request.set.stream()
+                            .mapToInt(table::getCardAtSlot)
+                            .toArray();
+                    if (env.util.testSet(cards)) {
+                        request.player.point();
+                        // Set the cards for removal in the next iteration.
+                        cardsToRemove = cards;
+                        updateTimerDisplay(true);
+                    } else {
+                        request.player.penalty();
+                    }
                 }
+                // Only happens if the set request was sent after a different set request that caused
+                // one of the cards in the current set request to be removed and not replaced, therefore pointing
+                // to a null slot.
+                catch (NullPointerException ex) { }
             }
         }
     }
