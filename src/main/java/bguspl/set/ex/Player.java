@@ -137,6 +137,9 @@ public class Player implements Runnable {
      * Freezes the player for a given number of milliseconds & updates the UI.
      * @param millis - how long to freeze the player.
      * @implNote - this is a busy wait function.
+     *
+     * @pre  - playerState == POINT_FREEZE || playerState == PENALTY_FREEZE
+     * @post - playerState == PLAY
      */
     private void freeze(long millis) {
         long end = System.currentTimeMillis() + millis;
@@ -185,6 +188,9 @@ public class Player implements Runnable {
     /**
      * Called by the dealer thread.
      * Called when the game should be terminated.
+     *
+     * @pre  - the player & AI threads are running & terminate == false.
+     * @post - the player & AI threads are interrupted & terminate == true.
      */
     public void terminate() {
         env.logger.info("Terminating " + playerThread.getName() + "...");
@@ -214,6 +220,9 @@ public class Player implements Runnable {
     /**
      * Called by the player thread.
      * Dispatches the action in the queue.
+     *
+     * @pre - the queue is not empty.
+     * @post - the queue is empty.
      */
     private synchronized void performAction() {
         while (!queue.isEmpty()) {
@@ -251,6 +260,9 @@ public class Player implements Runnable {
     /**
      * Called by the dealer thread.
      * Penalize a player and perform other related actions.
+     *
+     * @pre - playerState == WAIT_DEALER
+     * @post - playerState == PENALTY_FREEZE
      */
     public synchronized void penalty() {
         // Change the player state to freeze, and wake him up since decision was accepted.
@@ -261,12 +273,20 @@ public class Player implements Runnable {
     /**
      * Called by the dealer thread.
      * If a set request was invalidated return to play state, so they can keep listening to key presses.
+     *
+     * @pre - playerState == WAIT_DEALER
+     * @post - playerState == PLAY
      */
     public synchronized void irrelevantRequest() {
         state = PlayerState.PLAY;
         notifyAll();
     }
 
+    /**
+     * @return the player's score.
+     *
+     * @pre & @post - score >= 0
+     */
     public int score() {
         return score;
     }
