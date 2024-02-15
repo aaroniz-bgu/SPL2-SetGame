@@ -114,6 +114,8 @@ public class Dealer implements Runnable {
     @FunctionalInterface
     private interface TimerLoop { void run(); }
 
+    private final static long MAX_TIMEOUT = 1000L;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
@@ -334,7 +336,7 @@ public class Dealer implements Runnable {
         // If there are requests, treat them without delay
         if(requestQueue.isEmpty()) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(MAX_TIMEOUT);
             } catch (InterruptedException ignored) { }
         }
     }
