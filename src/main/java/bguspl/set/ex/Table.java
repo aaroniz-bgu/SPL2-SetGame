@@ -101,6 +101,7 @@ public class Table {
      * @param card - the card id to place in the slot.
      * @param slot - the slot in which the card should be placed.
      *
+     * @pre - slotToCard[slot] & cardToSlot[card] are null.
      * @post - the card placed is on the table, in the assigned slot.
      */
     public void placeCard(int card, int slot) {
@@ -147,6 +148,8 @@ public class Table {
      * Returns the vector containing tokens of the provided slot.
      * @param slot - the slot of the player tokens to return.
      * @return - a vector of the players tokens placed on the slot.
+     *
+     * @pre / @post - none
      */
     public Vector<Integer> getPlayerTokens(int slot) {
         return new Vector<>(slotsToPlayer.get(slot));
@@ -176,6 +179,9 @@ public class Table {
      * @param player - the player the token belongs to.
      * @param slot   - the slot from which to remove the token. 0 indexed.
      * @return       - true iff a token was successfully removed.
+     *
+     * @pre - slotToCard[slot] isn't null.
+     * @post - slotToPlayer[slot] doesn't contain player.
      */
     public boolean removeToken(int player, int slot) {
         synchronized (slotsToPlayer.get(slot)) {
@@ -188,6 +194,8 @@ public class Table {
      * Returns the card placed in the specified slot.
      * @param slot - the slot to return the card from.
      * @return - the card placed in the slot.
+     *
+     * @pre / @post - none
      */
     public int getCardAtSlot(int slot) {
         // No need to synchronize, only the dealer thread uses this, therefore,
@@ -199,6 +207,8 @@ public class Table {
      * Returns the slot in which the card is placed.
      * @param card - the card to return the slot of.
      * @return - the slot in which the card is placed.
+     *
+     * @pre - cardToSlot[card] is not null.
      */
     public int getSlotOfCard(int card) {
         return cardToSlot[card];
@@ -206,6 +216,8 @@ public class Table {
 
     /**
      * Returns the amount of slots present in the table.
+     *
+     * @pre / @post - none
      */
     public int slotCount() {
         return slotToCard.length;
@@ -213,6 +225,8 @@ public class Table {
 
     /**
      * Returns if the card is currently on the table.
+     *
+     * @pre / @post - none
      */
     public boolean containsCard(int card) {
         return cardToSlot[card] != null;

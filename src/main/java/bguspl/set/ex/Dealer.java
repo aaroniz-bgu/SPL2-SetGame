@@ -105,6 +105,17 @@ public class Dealer implements Runnable {
      */
     private final GameType gameType;
 
+    /**
+     * Functional interface to run the timer loop according to the game type.
+     * See the interface implementation below.
+     */
+    private final TimerLoop timerLoopFunc;
+
+    @FunctionalInterface
+    private interface TimerLoop { void run(); }
+
+    private final static long MAX_TIMEOUT = 1000L;
+
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
@@ -124,14 +135,42 @@ public class Dealer implements Runnable {
         // Setting the game type according to the turn time out in config file
         if (turnTimeout > 0) {
             gameType = GameType.NORMAL;
+            timerLoopFunc = () -> {
+                while (!terminate && System.currentTimeMillis() < reshuffleTime) {
+                    sleepUntilWokenOrTimeout();
+                    updateTimerDisplay(false);
+                    validateSet();
+                    removeCardsFromTable();
+                    placeCardsOnTable();
+                }
+            };
             env.logger.info("Set game mode as: Normal");
         }
         else if (turnTimeout == 0) {
             gameType = GameType.DISPLAYLASTACTION;
+            timerLoopFunc = () -> {
+                while (!terminate) {
+                    ensureLegalSetExists();
+                    sleepUntilWokenOrTimeout();
+                    updateTimerDisplay(false);
+                    validateSet();
+                    removeCardsFromTable();
+                    placeCardsOnTable();
+                }
+            };
             env.logger.info("Set game mode as: Display last action");
         }
         else {
             gameType = GameType.NOTIMER;
+            timerLoopFunc = () -> {
+                while (!terminate) {
+                    ensureLegalSetExists();
+                    sleepUntilWokenOrTimeout();
+                    validateSet();
+                    removeCardsFromTable();
+                    placeCardsOnTable();
+                }
+            };
             env.logger.info("Set game mode as: No timer");
         }
 
@@ -189,39 +228,8 @@ public class Dealer implements Runnable {
      * Called by the dealer thread.
      * The inner loop of the dealer thread that runs as long as the countdown did not time out.
      */
-        private void timerLoop() {
-        switch (gameType) {
-            case NORMAL:
-                while (!terminate && System.currentTimeMillis() < reshuffleTime) {
-                    sleepUntilWokenOrTimeout();
-                    updateTimerDisplay(false);
-                    validateSet();
-                    removeCardsFromTable();
-                    placeCardsOnTable();
-                }
-                break;
-            case NOTIMER:
-                while (!terminate) {
-                    ensureLegalSetExists();
-                    sleepUntilWokenOrTimeout();
-                    validateSet();
-                    removeCardsFromTable();
-                    placeCardsOnTable();
-                }
-                break;
-            case DISPLAYLASTACTION:
-                while (!terminate) {
-                    ensureLegalSetExists();
-                    sleepUntilWokenOrTimeout();
-                    updateTimerDisplay(false);
-                    validateSet();
-                    removeCardsFromTable();
-                    placeCardsOnTable();
-                }
-                break;
-            default:
-                break;
-        }
+    private void timerLoop() {
+        timerLoopFunc.run();
     }
 
     /**
@@ -301,6 +309,7 @@ public class Dealer implements Runnable {
                 env.logger.info("Shuffling deck...");
                 Collections.shuffle(deck);
             }
+            boolean hints  = !deletedSlots.isEmpty();
             boolean placed = true;
             while (!deletedSlots.isEmpty() && placed) {
                 placed = false;
@@ -311,6 +320,10 @@ public class Dealer implements Runnable {
                         placed = true;
                     }
                 }
+            }
+
+            if(hints && env.config.hints) {
+                table.hints();
             }
         }
     }
@@ -323,7 +336,7 @@ public class Dealer implements Runnable {
         // If there are requests, treat them without delay
         if(requestQueue.isEmpty()) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(MAX_TIMEOUT);
             } catch (InterruptedException ignored) { }
         }
     }
@@ -502,5 +515,4 @@ public class Dealer implements Runnable {
             }
         }
     }
-
 }
