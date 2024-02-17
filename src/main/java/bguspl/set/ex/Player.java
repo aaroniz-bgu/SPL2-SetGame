@@ -146,7 +146,7 @@ public class Player implements Runnable {
         while (end - System.currentTimeMillis() > 0 && !terminate) {
             env.ui.setFreeze(id, end - System.currentTimeMillis());
             try {
-                Thread.currentThread().sleep(FREEZE_MILLIS);
+                Thread.currentThread().sleep(Math.min(FREEZE_MILLIS, end - System.currentTimeMillis()));
             } catch (InterruptedException ignored) {
                 env.logger.warning(
                         playerThread.getName() + " was interrupted, during a freeze.");
