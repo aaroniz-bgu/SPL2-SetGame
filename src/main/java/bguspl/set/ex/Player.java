@@ -224,7 +224,7 @@ public class Player implements Runnable {
      * @pre - the queue is not empty.
      * @post - the queue is empty.
      */
-    private synchronized void performAction() {
+    private void performAction() {
         while (!queue.isEmpty()) {
             boolean set = dealer.dispatchAction(this, queue.poll());
             if (set) {
@@ -232,10 +232,12 @@ public class Player implements Runnable {
                 state = PlayerState.WAIT_DEALER;
             }
         }
-        notifyAll();
-        try {
-            wait();
-        } catch (InterruptedException ignore) {
+        synchronized (this) {
+            notifyAll();
+            try {
+                wait();
+            } catch (InterruptedException ignore) {
+            }
         }
     }
 
