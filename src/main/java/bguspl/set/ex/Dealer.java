@@ -114,7 +114,7 @@ public class Dealer implements Runnable {
     @FunctionalInterface
     private interface TimerLoop { void run(); }
 
-    private final static long MAX_TIMEOUT = 1000L;
+    private final static long MAX_TIMEOUT = 980L;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
