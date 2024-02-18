@@ -225,12 +225,16 @@ public class Player implements Runnable {
      * @post - the queue is empty.
      */
     private void performAction() {
+        boolean set = false;
         while (!queue.isEmpty()) {
-            boolean set = dealer.dispatchAction(this, queue.poll());
+            state = PlayerState.WAIT_DEALER;
+            set = dealer.dispatchAction(this, queue.poll());
             if (set) {
                 queue.clear();
-                state = PlayerState.WAIT_DEALER;
             }
+        }
+        if(!set) {
+            state = PlayerState.PLAY;
         }
         synchronized (this) {
             notifyAll();
