@@ -1,4 +1,4 @@
-`TODO PUT IMG`
+![ss](https://i.ibb.co/BHJfTvL/Screenshot-2024-02-15-214508.png)
 
 # SET: A Game of Visual Perception and Quick Thinking
 SET is a fast-paced card game that challenges players to find sets of three cards.
