@@ -2,6 +2,13 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
 /**
  * This class manages the players' threads and data
  *
@@ -51,6 +58,29 @@ public class Player implements Runnable {
     private int score;
 
     /**
+     * The state determines what's the player's state.
+     */
+    private enum PlayerState {
+        PLAY,
+        PENALTY_FREEZE,
+        WAIT_DEALER,
+        POINT_FREEZE
+    }
+    private volatile PlayerState state;
+
+    /**
+     * The queue of key presses (used by the AI player).
+     */
+    private final BlockingQueue<Integer> queue;
+
+    /**
+     * The dealer object.
+     */
+    private final Dealer dealer;
+
+    private static final long FREEZE_MILLIS = 900L;
+
+    /**
      * The class constructor.
      *
      * @param env    - the environment object.
@@ -64,6 +94,11 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
+        this.dealer = dealer;
+
+        this.queue = new ArrayBlockingQueue<>(env.config.featureSize);
+        this.state = null;
+
     }
 
     /**
@@ -75,14 +110,54 @@ public class Player implements Runnable {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
         if (!human) createArtificialIntelligence();
 
+        // Set the state to play, now we're not blocking this thread.
+        this.state = PlayerState.PLAY;
+
         while (!terminate) {
-            // TODO implement main player loop
+            switch (state) {
+                case PLAY:
+                    performAction();
+                    break;
+                case POINT_FREEZE:
+                    freeze(env.config.pointFreezeMillis);
+                    break;
+                case PENALTY_FREEZE:
+                    freeze(env.config.penaltyFreezeMillis);
+                    break;
+                default:
+                    break;
+            }
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
     /**
+     * Called by the player thread.
+     * Freezes the player for a given number of milliseconds & updates the UI.
+     * @param millis - how long to freeze the player.
+     * @implNote - this is a busy wait function.
+     *
+     * @pre  - playerState == POINT_FREEZE || playerState == PENALTY_FREEZE
+     * @post - playerState == PLAY
+     */
+    private void freeze(long millis) {
+        long end = System.currentTimeMillis() + millis;
+        while (end - System.currentTimeMillis() > 0 && !terminate) {
+            env.ui.setFreeze(id, end - System.currentTimeMillis());
+            try {
+                Thread.currentThread().sleep(Math.min(FREEZE_MILLIS, end - System.currentTimeMillis()));
+            } catch (InterruptedException ignored) {
+                env.logger.warning(
+                        playerThread.getName() + " was interrupted, during a freeze.");
+            }
+        }
+        env.ui.setFreeze(id, 0);
+        state = PlayerState.PLAY;
+    }
+
+    /**
+     * Called by the player thread.
      * Creates an additional thread for an AI (computer) player. The main loop of this thread repeatedly generates
      * key presses. If the queue of key presses is full, the thread waits until it is not full.
      */
@@ -90,54 +165,140 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
+            //To simulate key presses:
+            Random random = new Random();
+            int maxSlot = env.config.columns * env.config.rows;
+
             while (!terminate) {
-                // TODO implement player key press simulator
-                try {
-                    synchronized (this) { wait(); }
-                } catch (InterruptedException ignored) {}
+                queue.offer(random.nextInt(maxSlot));
+                synchronized (this) {
+                    notifyAll();
+                    try {
+                        wait();
+                    } catch (InterruptedException e) { }
+                }
             }
+
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
         aiThread.start();
     }
 
     /**
+     * Called by the dealer thread.
      * Called when the game should be terminated.
+     *
+     * @pre  - the player & AI threads are running & terminate == false.
+     * @post - the player & AI threads are interrupted & terminate == true.
      */
     public void terminate() {
-        // TODO implement
+        env.logger.info("Terminating " + playerThread.getName() + "...");
+        terminate = true;
+        playerThread.interrupt();
+        if(!human) aiThread.interrupt();
     }
 
     /**
+     * Called by the EventListener thread and the AI thread.
      * This method is called when a key is pressed.
      *
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
+        if(state == PlayerState.PLAY) {
+            boolean changed = queue.offer(slot);
+            // Optimize the synchronization.
+            if (changed) {
+                synchronized (this) {
+                    notifyAll();
+                }
+            }
+        }
     }
 
     /**
+     * Called by the player thread.
+     * Dispatches the action in the queue.
+     *
+     * @pre - the queue is not empty.
+     * @post - the queue is empty.
+     */
+    private void performAction() {
+        boolean set = false;
+        while (!queue.isEmpty()) {
+            state = PlayerState.WAIT_DEALER;
+            set = dealer.dispatchAction(this, queue.poll());
+            if (set) {
+                queue.clear();
+            }
+        }
+        if(!set) {
+            state = PlayerState.PLAY;
+        }
+        synchronized (this) {
+            notifyAll();
+            try {
+                wait();
+            } catch (InterruptedException ignore) {
+            }
+        }
+    }
+
+    /**
+     * Called by the dealer thread.
      * Award a point to a player and perform other related actions.
      *
      * @post - the player's score is increased by 1.
      * @post - the player's score is updated in the ui.
      */
-    public void point() {
-        // TODO implement
-
-        int ignored = table.countCards(); // this part is just for demonstration in the unit tests
+    public synchronized void point() {
+        // Change player state to freeze, and give him a point.
+        state = PlayerState.POINT_FREEZE;
+        // Since player thread waits for decision.
+        notifyAll();
+        // This part is just for demonstration in the unit tests
+        int ignored = table.countCards();
+        // This is already increments the score.
         env.ui.setScore(id, ++score);
     }
 
     /**
+     * Called by the dealer thread.
      * Penalize a player and perform other related actions.
+     *
+     * @pre - playerState == WAIT_DEALER
+     * @post - playerState == PENALTY_FREEZE
      */
-    public void penalty() {
-        // TODO implement
+    public synchronized void penalty() {
+        // Change the player state to freeze, and wake him up since decision was accepted.
+        state = PlayerState.PENALTY_FREEZE;
+        notifyAll();
     }
 
+    /**
+     * Called by the dealer thread.
+     * If a set request was invalidated return to play state, so they can keep listening to key presses.
+     *
+     * @pre - playerState == WAIT_DEALER
+     * @post - playerState == PLAY
+     */
+    public synchronized void irrelevantRequest() {
+        state = PlayerState.PLAY;
+        notifyAll();
+    }
+
+    /**
+     * @return the player's score.
+     *
+     * @pre & @post - score >= 0
+     */
     public int score() {
         return score;
+    }
+
+    @Override
+    public String toString() {
+        return "Player " + (this.id + 1);
     }
 }
